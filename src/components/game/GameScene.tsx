@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Sky, Stars } from '@react-three/drei'
+import { Sky, Stars, Cloud } from '@react-three/drei'
 import { Car } from './Car'
 import { Terrain, RoadDetails, Scenery } from './Terrain'
 import { TreesOptimized } from './Trees'
@@ -16,7 +16,7 @@ export function GameScene() {
           position: [0, 12, -25],
           fov: 65,
           near: 0.1,
-          far: 25000, // Increased for 12km+ visibility!
+          far: 8000,
         }}
         gl={{
           antialias: true,
@@ -24,33 +24,34 @@ export function GameScene() {
           alpha: false,
           stencil: false,
           depth: true,
-          toneMapping: 3, // ACES Filmic
-          toneMappingExposure: 1.1,
+          toneMapping: 3,
+          toneMappingExposure: 1.2, // Brighter!
         }}
         dpr={[1, 1.5]}
         shadows={false}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.5} color="#b4d4ff" />
+        {/* Strong ambient light */}
+        <ambientLight intensity={0.7} color="#b4d4ff" />
         
+        {/* Main sunlight */}
         <directionalLight
           position={[200, 300, 100]}
-          intensity={1.4}
-          color="#fff5e6"
+          intensity={1.6}
+          color="#fff8e7"
           castShadow={false}
         />
         
+        {/* Fill light */}
         <directionalLight
           position={[-100, 150, -50]}
-          intensity={0.3}
+          intensity={0.4}
           color="#a8c8ff"
         />
         
-        <hemisphereLight
-          args={['#87CEEB', '#3d5c3d', 0.4]}
-        />
+        {/* Hemisphere light */}
+        <hemisphereLight args={['#87CEEB', '#4a7c4e', 0.5]} />
 
-        {/* Sky */}
+        {/* Beautiful Sky */}
         <Suspense fallback={null}>
           <Sky
             distance={450000}
@@ -63,31 +64,24 @@ export function GameScene() {
             mieDirectionalG={0.8}
           />
           
-          <Stars 
-            radius={200}
-            depth={50}
-            count={500}
-            factor={4}
-            saturation={0}
-            fade
-            speed={0.2}
-          />
+          <Stars radius={200} depth={50} count={500} factor={4} saturation={0} fade speed={0.2} />
+
+          {/* Clouds for atmosphere */}
+          <Cloud position={[100, 80, -200]} speed={0.2} opacity={0.5} />
+          <Cloud position={[-150, 90, -300]} speed={0.15} opacity={0.4} />
+          <Cloud position={[200, 70, 100]} speed={0.25} opacity={0.45} />
         </Suspense>
 
-        {/* Fog for depth - adjusted for 12km visibility */}
-        <fog attach="fog" args={['#c8e6ff', 8000, 15000]} />
+        {/* LIGHT fog (not heavy!) */}
+        <fog attach="fog" args={['#c8e6ff', 200, 4000]} />
 
-        {/* World */}
-        <Terrain />
-        <RoadDetails />
-        <TreesOptimized />
-        <Scenery />
-
-        {/* Player vehicle */}
-        <Car />
-
-        {/* Camera controller */}
-        <CameraController />
+        {/* World layers in order */}
+        <Terrain />        {/* 1. Ground */}
+        <RoadDetails />     {/* 2. Roads */}
+        <TreesOptimized />   {/* 3. Trees */}
+        <Scenery />         {/* 4. Details */}
+        <Car />             {/* 5. Vehicle */}
+        <CameraController /> {/* 6. Camera */}
       </Canvas>
     </div>
   )

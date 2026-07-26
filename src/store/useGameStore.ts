@@ -50,9 +50,9 @@ const initialVehicleState: VehicleState = {
   rotation: 0,
   velocity: 0,
   steering: 0,
-  gear: 'N',
+  gear: 'N', // Start in Neutral (like a real car!)
   engineRPM: 850,
-  clutchEngaged: false,
+  clutchEngaged: true, // Clutch engaged at start
   input: {
     forward: false,
     backward: false,

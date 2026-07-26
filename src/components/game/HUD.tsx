@@ -281,4 +281,97 @@ function GearStickPattern({ currentGear, size = 140, animated = false }: {
       />
       
       {/* Vertical lines and gear positions */}
-      {[25, 50, 75].map
+      {[25, 50, 75].map((xPos, idx) => (
+        <div key={idx}>
+          {/* Vertical line */}
+          <div 
+            className="absolute bg-gray-600"
+            style={{
+              left: `${xPos * scale}px`,
+              top: `${20 * scale}px`,
+              bottom: `${20 * scale}px`,
+              width: `${3 * scale}px`,
+              transform: 'translateX(-50%)',
+              borderRadius: '2px'
+            }}
+          />
+          
+          {/* Top gear position (1, 3, 5) */}
+          {gears.filter(g => g.x === xPos && g.y === 20).map(gear => (
+            <div
+              key={gear.pos}
+              className="absolute flex items-center justify-center font-bold font-mono text-xs"
+              style={{
+                left: `${xPos * scale}px`,
+                top: `${20 * scale}px`,
+                width: `${20 * scale}px`,
+                height: `${20 * scale}px`,
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: currentGear === gear.pos ? (animated ? '#22c55e' : '#2563eb') : '#666',
+                color: currentGear === gear.pos ? '#fff' : '#333',
+                borderRadius: '50%',
+                border: `${currentGear === gear.pos ? 2 : 1}px solid ${currentGear === gear.pos ? '#fff' : '#888'}`,
+                fontSize: `${11 * scale}px`
+              }}
+            >
+              {gear.pos}
+            </div>
+          ))}
+          
+          {/* Bottom gear position (2, 4, R) */}
+          {gears.filter(g => g.x === xPos && g.y === 80).map(gear => (
+            <div
+              key={gear.pos}
+              className="absolute flex items-center justify-center font-bold font-mono text-xs"
+              style={{
+                left: `${xPos * scale}px`,
+                top: `${80 * scale}px`,
+                width: `${20 * scale}px`,
+                height: `${20 * scale}px`,
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: currentGear === gear.pos ? (animated ? '#22c55e' : '#2563eb') : '#666',
+                color: currentGear === gear.pos ? '#fff' : '#333',
+                borderRadius: '50%',
+                border: `${currentGear === gear.pos ? 2 : 1}px solid ${currentGear === gear.pos ? '#fff' : '#888'}`,
+                fontSize: `${11 * scale}px`
+              }}
+            >
+              {gear.pos}
+            </div>
+          ))}
+        </div>
+      ))}
+      
+      {/* Neutral position (center) */}
+      <div
+        className="absolute flex items-center justify-center font-bold font-mono"
+        style={{
+          left: '50%',
+          top: '50%',
+          width: `${24 * scale}px`,
+          height: `${24 * scale}px`,
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: currentGear === 'N' ? (animated ? '#fbbf24' : '#9ca3af') : 'transparent',
+          color: currentGear === 'N' ? '#fff' : '#555',
+          borderRadius: '50%',
+          border: `${currentGear === 'N' ? 2 : 1}px solid ${currentGear === 'N' ? '#fff' : '#888'}`,
+          fontSize: `${10 * scale}px`
+        }}
+      >
+        N
+      </div>
+      
+      {/* Gear stick knob */}
+      <div
+        className={`absolute rounded-full bg-gray-800 border-2 border-white shadow-lg transition-all duration-300 ${animated ? 'animate-pulse bg-green-500' : ''}`}
+        style={{
+          left: `calc(50% + ${pos.x * 0.5}%)`,
+          top: `calc(50% + ${pos.y * 0.5}%)`,
+          width: `${16 * scale}px`,
+          height: `${16 * scale}px`,
+          transform: 'translate(-50%, -50%)'
+        }}
+      />
+    </div>
+  )
+}

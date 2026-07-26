@@ -83,7 +83,7 @@ export const PHYSICS = {
   
   // How quickly things respond
   RPM_RESPONSE_RATE: 6.5,
-  COAST_DECELERATION: 0.5, // m/s² deceleration when coasting in neutral
+  COAST_DECELERATION: 0.5, // m/s² deceleration when coasting in neutral at low speeds
 }
 
 // Convert km/h to m/s
@@ -300,13 +300,25 @@ export function updatePhysics(
     }
   }
 
-  // B) Coast deceleration in neutral (FIXED! Now slows down properly!)
-  if (gear === 'N' && !newClutchEngaged === false) {
-    // In neutral without clutch: coast with drag + rolling resistance only
-    // The calculateDragForce and calculateRollingResistance will handle this
-    // But add extra coast deceleration for realistic feel
+  // B) Coast deceleration in neutral - SPEED DEPENDENT!
+  // At high speeds, should slow down MUCH faster (air drag + rolling resistance)
+  if (gear === 'N') {
     if (Math.abs(velocity) > 0.1) {
-      const coastForce = -Math.sign(velocity) * MASS * COAST_DECELERATION
+      const speedKmh = Math.abs(velocity) * MS_TO_KMH
+      
+      // Speed-dependent coasting: faster = more deceleration
+      let coastDecel: number
+      if (speedKmh > 150) {
+        coastDecel = 4.0 // Very strong at 150+ km/h
+      } else if (speedKmh > 100) {
+        coastDecel = 2.5 // Strong at 100-150 km/h  
+      } else if (speedKmh > 50) {
+        coastDecel = 1.2 // Moderate at 50-100 km/h
+      } else {
+        coastDecel = COAST_DECELERATION // Normal below 50 km/h
+      }
+      
+      const coastForce = -Math.sign(velocity) * MASS * coastDecel
       totalForce += coastForce
     }
   }

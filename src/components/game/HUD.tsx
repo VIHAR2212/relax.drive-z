@@ -145,13 +145,19 @@ export function HUD() {
               <span className="text-xs text-gray-500 uppercase tracking-[0.25em] font-medium">Gear</span>
               <span className={`text-4xl font-bold font-mono ${
                 vehicle.gear === 'R' ? 'text-red-400' :
-                vehicle.gear === 'N' ? 'text-gray-400' :
+                vehicle.gear === 'N' ? 'text-gray-400 animate-pulse' :
                 ['1', '2'].includes(vehicle.gear) ? 'text-green-400' :
                 ['3', '4'].includes(vehicle.gear) ? 'text-blue-400' :
                 'text-purple-400'
               }`}>
                 {getGearDisplay(vehicle.gear)}
               </span>
+              {/* Show hint when in Neutral */}
+              {vehicle.gear === 'N' && (
+                <span className="text-xs text-yellow-400 ml-2 animate-pulse">
+                  Press Shift+1
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-3">
@@ -190,10 +196,6 @@ export function HUD() {
       {/* Gear indicator overlay when shifting */}
       {(vehicle.gear !== 'N') && (
         <div className="absolute top-1/2 right-12 transform -translate-y-1/2">
-          {/*
-            Large gear indicator overlay
-            Shows current gear in background for visual feedback
-          */}
           <div className={`
             text-9xl font-bold opacity-10 font-mono
             ${vehicle.gear === 'R' ? 'text-red-500' :

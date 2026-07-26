@@ -12,15 +12,16 @@ export interface VehicleState {
   // Gear system - 6-speed manual
   gear: GearType
   engineRPM: number
-  clutchEngaged: boolean
+  clutchEngaged: boolean // true = clutch released (power transferred), false = clutch pressed (disconnected)
   
   // Input state
   input: {
-    forward: boolean
-    backward: boolean
-    left: boolean
-    right: boolean
-    handbrake: boolean
+    forward: boolean      // W / Accelerator
+    backward: boolean     // S / Brake
+    left: boolean         // A / Steer left
+    right: boolean        // D / Steer right
+    handbrake: boolean    // Space / Handbrake
+    clutchPressed: boolean // Left Ctrl / Clutch pedal pressed
   }
 }
 
@@ -52,13 +53,14 @@ const initialVehicleState: VehicleState = {
   steering: 0,
   gear: 'N', // Start in Neutral (like a real car!)
   engineRPM: 850,
-  clutchEngaged: true, // Clutch engaged at start
+  clutchEngaged: true, // Start with clutch engaged (released)
   input: {
     forward: false,
     backward: false,
     left: false,
     right: false,
     handbrake: false,
+    clutchPressed: false, // Clutch not pressed initially
   },
 }
 
@@ -86,7 +88,17 @@ export const useGameStore = create<GameStore>((set) => ({
     set((state) => ({ vehicle: { ...state.vehicle, engineRPM } })),
   
   setClutchEngaged: (clutchEngaged) =>
-    set((state) => ({ vehicle: { ...state.vehicle, clutchEngaged } })),
+    set((state) => ({ 
+      vehicle: { 
+        ...state.vehicle, 
+        clutchEngaged,
+        // Also update clutchPressed in input for UI display
+        input: { 
+          ...state.vehicle.input, 
+          clutchPressed: !clutchEngaged 
+        }
+      } 
+    })),
   
   setInput: (input) =>
     set((state) => ({

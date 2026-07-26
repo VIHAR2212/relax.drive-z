@@ -1,102 +1,117 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useRef, useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useGameStore } from '@/store/useGameStore'
 
-// World configuration - Optimized for performance
-const WORLD_SIZE = 1000 // 1km x 1km world
+// INFINITE TERRAIN CONFIGURATION
+const CHUNK_SIZE = 200 // Size of each terrain chunk
 const ROAD_WIDTH = 12
 
+// Infinite scrolling terrain that follows the player
 export function Terrain() {
-  // Generate terrain geometry - optimized for performance
-  const { geometry, material } = useMemo(() => {
-    const size = WORLD_SIZE
-    const segments = 64 // Balanced detail vs performance
-    
-    // Create flat terrain plane
-    const geo = new THREE.PlaneGeometry(size, size, segments, segments)
-    geo.rotateX(-Math.PI / 2)
+  const meshRef = useRef<THREE.Mesh>(null)
+  const vehiclePosition = useGameStore((s) => s.vehicle.position)
 
-    const positions = geo.attributes.position.array as Float32Array
-    const colors = new Float32Array(positions.length)
+  const createChunkGeometry = useMemo(() => {
+    return (chunkX: number, chunkZ: number): THREE.PlaneGeometry => {
+      const geo = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, 32, 32)
+      geo.rotateX(-Math.PI / 2)
 
-    // Color palette
-    const grassColor = new THREE.Color('#4a7c4e')
-    const roadColor = new THREE.Color('#333333')
-    const shoulderColor = new THREE.Color('#444444')
-    const markingColor = new THREE.Color('#dddddd')
+      const positions = geo.attributes.position.array as Float32Array
+      const colors = new Float32Array(positions.length)
 
-    // Generate colors based on position
-    for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i]
-      const z = positions[i + 2]
-      
-      let color: THREE.Color
-      
-      // Check if on road (simple cross pattern)
-      const onRoadX = Math.abs(x) < ROAD_WIDTH / 2
-      const onRoadZ = Math.abs(z) < ROAD_WIDTH / 2
-      const onRoad = onRoadX || onRoadZ
-      
-      if (onRoad) {
-        // Road surface
-        const isCenterLine = (onRoadX && Math.abs(x) < 0.2) || (onRoadZ && Math.abs(z) < 0.2)
-        const isEdgeLine = (onRoadX && Math.abs(x) > ROAD_WIDTH / 2 - 0.3 && Math.abs(x) < ROAD_WIDTH / 2) ||
-                          (onRoadZ && Math.abs(z) > ROAD_WIDTH / 2 - 0.3 && Math.abs(z) < ROAD_WIDTH / 2)
+      const grassColor = new THREE.Color('#4a7c4e')
+      const roadColor = new THREE.Color('#333333')
+      const markingColor = new THREE.Color('#dddddd')
+
+      for (let i = 0; i < positions.length; i += 3) {
+        const localX = positions[i]
+        const localZ = positions[i + 2]
         
-        if (isCenterLine || isEdgeLine) {
-          color = markingColor
+        const worldX = localX + chunkX * CHUNK_SIZE
+        const worldZ = localZ + chunkZ * CHUNK_SIZE
+        
+        let color: THREE.Color
+        
+        const onRoadX = Math.abs(worldX) < ROAD_WIDTH / 2
+        const onRoadZ = Math.abs(worldZ) < ROAD_WIDTH / 2
+        const onRoad = onRoadX || onRoadZ
+        
+        if (onRoad) {
+          const isCenterLine = (onRoadX && Math.abs(worldX) < 0.15) || 
+                               (onRoadZ && Math.abs(worldZ) < 0.15)
+          const isEdgeLine = (onRoadX && Math.abs(worldX) > ROAD_WIDTH / 2 - 0.25 && Math.abs(worldX) < ROAD_WIDTH / 2) ||
+                            (onRoadZ && Math.abs(worldZ) > ROAD_WIDTH / 2 - 0.25 && Math.abs(worldZ) < ROAD_WIDTH / 2)
+          
+          const isDashedCenter = isCenterLine && 
+            ((onRoadX ? Math.floor(Math.abs(worldZ)) : Math.floor(Math.abs(worldX))) % 8 < 4)
+          
+          if (isDashedCenter || isEdgeLine) {
+            color = markingColor
+          } else {
+            color = roadColor
+          }
         } else {
-          color = roadColor
+          const variation = (Math.sin(worldX * 0.02) * Math.cos(worldZ * 0.02)) * 0.08
+          color = grassColor.clone().offsetHSL(0, 0, variation)
+          
+          const patchSeed = Math.sin(worldX * 0.1) * Math.cos(worldZ * 0.1)
+          if (patchSeed > 0.7) {
+            color.offsetHSL(0, -0.1, -0.1)
+          }
         }
-      } else {
-        // Grass with subtle variation
-        const variation = (Math.sin(x * 0.01) * Math.cos(z * 0.01)) * 0.1
-        color = grassColor.clone().offsetHSL(0, 0, variation)
+        
+        colors[i] = color.r
+        colors[i + 1] = color.g
+        colors[i + 2] = color.b
       }
+
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      geo.computeVertexNormals()
       
-      colors[i] = color.r
-      colors[i + 1] = color.g
-      colors[i + 2] = color.b
+      return geo
     }
+  }, [])
 
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    geo.computeVertexNormals()
-
-    const mat = new THREE.MeshStandardMaterial({
+  const material = useMemo(() => 
+    new THREE.MeshStandardMaterial({
       vertexColors: true,
       roughness: 0.9,
       metalness: 0.0,
-    })
+    }),
+    []
+  )
 
-    return { geometry: geo, material: mat }
-  }, [])
+  useFrame(() => {
+    if (!meshRef.current) return
+    
+    const playerX = vehiclePosition[0]
+    const playerZ = vehiclePosition[2]
+    
+    const chunkX = Math.floor(playerX / CHUNK_SIZE)
+    const chunkZ = Math.floor(playerZ / CHUNK_SIZE)
+    
+    meshRef.current.position.x = chunkX * CHUNK_SIZE
+    meshRef.current.position.z = chunkZ * CHUNK_SIZE
+  })
+
+  const geometry = useMemo(() => createChunkGeometry(0, 0), [createChunkGeometry])
 
   return (
     <mesh 
+      ref={meshRef}
       geometry={geometry} 
       material={material} 
       receiveShadow={false}
-      position={[0, 0, 0]}
     />
   )
 }
 
-// Simple road barriers
 export function RoadDetails() {
-  const barrierPositions = useMemo(() => {
-    const positions: [number, number, number][] = []
-    
-    // Add barriers along roads
-    for (let i = -450; i < 450; i += 30) {
-      positions.push([ROAD_WIDTH / 2 + 0.5, 0.5, i])
-      positions.push([-ROAD_WIDTH / 2 - 0.5, 0.5, i])
-      positions.push([i, 0.5, ROAD_WIDTH / 2 + 0.5])
-      positions.push([i, 0.5, -ROAD_WIDTH / 2 - 0.5])
-    }
-    
-    return positions
-  }, [])
+  const groupRef = useRef<THREE.Group>(null)
+  const vehiclePosition = useGameStore((s) => s.vehicle.position)
 
   const barrierMaterial = useMemo(() => 
     new THREE.MeshStandardMaterial({ 
@@ -107,14 +122,41 @@ export function RoadDetails() {
     []
   )
 
+  const getBarrierPositions = (): [number, number, number][] => {
+    const positions: [number, number, number][] = []
+    
+    for (let z = -CHUNK_SIZE/2; z <= CHUNK_SIZE/2; z += 20) {
+      positions.push([ROAD_WIDTH / 2 + 0.5, 0.5, z])
+      positions.push([-ROAD_WIDTH / 2 - 0.5, 0.5, z])
+    }
+    
+    for (let x = -CHUNK_SIZE/2; x <= CHUNK_SIZE/2; x += 20) {
+      positions.push([x, 0.5, ROAD_WIDTH / 2 + 0.5])
+      positions.push([x, 0.5, -ROAD_WIDTH / 2 - 0.5])
+    }
+    
+    return positions
+  }
+
+  useFrame(() => {
+    if (!groupRef.current) return
+    
+    const playerX = vehiclePosition[0]
+    const playerZ = vehiclePosition[2]
+    
+    const chunkX = Math.floor(playerX / CHUNK_SIZE)
+    const chunkZ = Math.floor(playerZ / CHUNK_SIZE)
+    
+    groupRef.current.position.x = chunkX * CHUNK_SIZE
+    groupRef.current.position.z = chunkZ * CHUNK_SIZE
+  })
+
+  const barrierPositions = useMemo(() => getBarrierPositions(), [])
+
   return (
-    <group>
+    <group ref={groupRef}>
       {barrierPositions.map((pos, i) => (
-        <mesh 
-          key={`barrier-${i}`}
-          position={pos}
-          material={barrierMaterial}
-        >
+        <mesh key={`barrier-${i}`} position={pos} material={barrierMaterial}>
           <boxGeometry args={[0.15, 0.8, 8]} />
         </mesh>
       ))}
@@ -122,14 +164,9 @@ export function RoadDetails() {
   )
 }
 
-// Simple scenery rocks
 export function Scenery() {
-  const rockPositions = useMemo(() => [
-    [60, 0.4, 80], [-100, 0.35, -70], [150, 0.3, 50],
-    [-180, 0.45, -120], [120, 0.25, -140], [-150, 0.38, 180],
-    [220, 0.42, 220], [-260, 0.35, -220], [350, 0.28, -280],
-    [-320, 0.32, 350], [50, 0.4, -250], [-60, 0.25, 280],
-  ] as [number, number, number][])
+  const groupRef = useRef<THREE.Group>(null)
+  const vehiclePosition = useGameStore((s) => s.vehicle.position)
 
   const rockMaterial = useMemo(() => 
     new THREE.MeshStandardMaterial({ 
@@ -140,13 +177,52 @@ export function Scenery() {
     []
   )
 
+  const getSceneryPositions = (seedX: number, seedZ: number): [number, number, number][] => {
+    const positions: [number, number, number][] = []
+    
+    const pseudoRandom = (n: number) => {
+      const x = Math.sin(seedX * 12.9898 + seedZ * 78.233 + n) * 43758.5453
+      return x - Math.floor(x)
+    }
+    
+    for (let i = 0; i < 30; i++) {
+      const angle = pseudoRandom(i) * Math.PI * 2
+      const distance = 30 + pseudoRandom(i + 100) * (CHUNK_SIZE * 0.45)
+      
+      const x = Math.cos(angle) * distance
+      const z = Math.sin(angle) * distance
+      
+      if (Math.abs(x) < ROAD_WIDTH / 2 + 5 && Math.abs(z) < ROAD_WIDTH / 2 + 5) continue
+      
+      const y = 0.25 + pseudoRandom(i + 200) * 0.35
+      positions.push([x, y, z])
+    }
+    
+    return positions
+  }
+
+  useFrame(() => {
+    if (!groupRef.current) return
+    
+    const playerX = vehiclePosition[0]
+    const playerZ = vehiclePosition[2]
+    
+    const chunkX = Math.floor(playerX / CHUNK_SIZE)
+    const chunkZ = Math.floor(playerZ / CHUNK_SIZE)
+    
+    groupRef.current.position.x = chunkX * CHUNK_SIZE
+    groupRef.current.position.z = chunkZ * CHUNK_SIZE
+  })
+
+  const sceneryPositions = useMemo(() => getSceneryPositions(0, 0), [])
+
   return (
-    <group>
-      {rockPositions.map((pos, i) => (
+    <group ref={groupRef}>
+      {sceneryPositions.map((pos, i) => (
         <mesh 
-          key={`rock-${i}`}
+          key={`scenery-${i}`}
           position={pos}
-          scale={[0.8 + Math.random() * 0.6, 0.6, 0.8 + Math.random() * 0.6]}
+          scale={[0.8 + (i % 5) * 0.15, 0.5 + (i % 3) * 0.2, 0.8 + (i % 5) * 0.15]}
           material={rockMaterial}
         >
           <dodecahedronGeometry args={[1, 0]} />

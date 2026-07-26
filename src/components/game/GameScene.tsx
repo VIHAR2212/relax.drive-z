@@ -16,7 +16,7 @@ export function GameScene() {
           position: [0, 12, -25],
           fov: 65,
           near: 0.1,
-          far: 2000,
+          far: 25000, // Increased for 12km+ visibility!
         }}
         gl={{
           antialias: true,
@@ -74,8 +74,8 @@ export function GameScene() {
           />
         </Suspense>
 
-        {/* Fog for depth */}
-        <fog attach="fog" args={['#c8e6ff', 150, 1000]} />
+        {/* Fog for depth - adjusted for 12km visibility */}
+        <fog attach="fog" args={['#c8e6ff', 8000, 15000]} />
 
         {/* World */}
         <Terrain />

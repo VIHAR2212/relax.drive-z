@@ -57,7 +57,7 @@ export function HUD() {
         setEngineStarting(false)
         setEngineStarted(true)
         setStarted(true)
-      }, 1500) // Realistic cranking sound time
+      }, 1500)
     }
   }
 
@@ -65,7 +65,7 @@ export function HUD() {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50">
         <div className="text-center max-w-lg mx-4">
-          {/* Car silhouette / Title */}
+          {/* Title */}
           <div className="mb-8">
             <h1 className="text-5xl font-bold text-white mb-2 tracking-[0.3em] uppercase opacity-90">
               relax.drive
@@ -73,7 +73,7 @@ export function HUD() {
             <p className="text-gray-500 tracking-widest text-sm">Manual Transmission Simulator</p>
           </div>
 
-          {/* Ignition Key Area */}
+          {/* Ignition Area */}
           <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-8 border border-gray-700 shadow-2xl mb-8">
             <div className="mb-6">
               <div className="flex items-center justify-center gap-3 mb-4">
@@ -110,7 +110,7 @@ export function HUD() {
               )}
             </div>
 
-            {/* Quick Controls Reference */}
+            {/* Controls Reference */}
             <div className="border-t border-gray-700 pt-4 mt-4">
               <p className="text-xs text-gray-500 mb-3 uppercase tracking-wider">Quick Controls</p>
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
@@ -134,10 +134,9 @@ export function HUD() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-40 select-none">
-      {/* Speedometer - bottom center */}
+      {/* Speedometer */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
         <div className="bg-black/75 backdrop-blur-xl rounded-3xl px-10 py-6 border border-white/10 shadow-2xl min-w-[320px]">
-          {/* Speed display */}
           <div className="text-center mb-3">
             <span className="text-7xl font-bold text-white tracking-tighter tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
               {speedKmh}
@@ -145,7 +144,7 @@ export function HUD() {
             <span className="text-2xl text-gray-400 ml-2 font-light">km/h</span>
           </div>
           
-          {/* Tachometer bar */}
+          {/* Tachometer */}
           <div className="w-full h-2.5 bg-gray-800 rounded-full overflow-hidden mb-4">
             <div 
               className={`h-full transition-all duration-75 rounded-full ${
@@ -157,7 +156,7 @@ export function HUD() {
             />
           </div>
           
-          {/* Gear and RPM info */}
+          {/* Gear & RPM Info */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-xs text-gray-500 uppercase tracking-[0.25em] font-medium">Gear</span>
@@ -170,7 +169,6 @@ export function HUD() {
               }`}>
                 {getGearDisplay(vehicle.gear)}
               </span>
-              {/* Show hint when in Neutral */}
               {vehicle.gear === 'N' && (
                 <span className="text-xs text-yellow-400 ml-2 animate-pulse">
                   Shift+1
@@ -210,7 +208,7 @@ export function HUD() {
         </div>
       </div>
 
-      {/* Mini controls reminder - top right */}
+      {/* Mini controls - top right */}
       <div className="absolute top-5 right-5 bg-black/50 backdrop-blur-md rounded-lg p-4 text-xs text-gray-400 border border-white/5">
         <div className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono">
           <span><span className="text-gray-200">W/S</span> Gas/Brake</span>
@@ -227,7 +225,7 @@ export function HUD() {
         </h1>
       </div>
 
-      {/* Large gear indicator overlay when shifting */}
+      {/* Large gear overlay when shifting */}
       {(vehicle.gear !== 'N') && showGearAnimation && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
           <div className={`
@@ -245,98 +243,42 @@ export function HUD() {
   )
 }
 
-// H-Pattern Gear Stick Component
+// H-Pattern Gear Stick Component (Fixed - Uses divs instead of SVG)
 function GearStickPattern({ currentGear, size = 140, animated = false }: { 
   currentGear: string
   size?: number
   animated?: boolean 
 }) {
   const pos = GEAR_POSITIONS[currentGear] || GEAR_POSITIONS['N']
+  const scale = size / 100
+  
+  // Gear positions in the pattern
+  const gears = [
+    { pos: '1', x: 25, y: 20 },
+    { pos: '2', x: 25, y: 80 },
+    { pos: '3', x: 50, y: 20 },
+    { pos: '4', x: 50, y: 80 },
+    { pos: '5', x: 75, y: 20 },
+    { pos: 'R', x: 75, y: 80 },
+  ]
   
   return (
     <div 
       className="relative bg-gradient-to-b from-gray-200 to-gray-300 rounded-full"
       style={{ width: size, height: size }}
     >
-      {/* Gate pattern lines */}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-        {/* Horizontal bar */}
-        <line x1="15" y1="50" x2="85" y2="50" stroke="#444" strokeWidth="3" strokeLinecap="round"/>
-        
-        {/* Vertical left (1-2) */}
-        <line x1="25" y1="20" x2="25" y2="80" stroke="#444" strokeWidth="3" strokeLinecap="round"/>
-        
-        {/* Vertical center (3-4) */}
-        <line x1="50" y1="20" x2="50" y2="80" stroke="#444" strokeWidth="3" strokeLinecap="round"/>
-        
-        {/* Vertical right (5-R) */}
-        <line x1="75" y1="20" x2="75" y2="80" stroke="#444" strokeWidth="3" strokeLinecap="round"/>
-        
-        {/* Gear position circles */}
-        {[
-          { pos: '1', x: 25, y: 20 },
-          { pos: '2', x: 25, y: 80 },
-          { pos: '3', x: 50, y: 20 },
-          { pos: '4', x: 50, y: 80 },
-          { pos: '5', x: 75, y: 20 },
-          { pos: 'R', x: 75, y: 80 },
-        ].map(gear => (
-          <circle
-            key={gear.pos}
-            cx={gear.x}
-            cy={gear.y}
-            r="10"
-            fill={currentGear === gear.pos ? (animated ? '#22c55e' : '#2563eb') : '#666'}
-            stroke={currentGear === gear.pos ? '#fff' : '#888'}
-            strokeWidth={currentGear === gear.pos ? 2 : 1}
-            className="transition-all duration-200"
-          />
-          <text
-            x={gear.x}
-            y={gear.y + 4}
-            textAnchor="middle"
-            fill={currentGear === gear.pos ? '#fff' : '#333'}
-            fontSize="12"
-            fontWeight="bold"
-            fontFamily="monospace"
-          >
-            {gear.pos}
-          </text>
-        ))}
-        
-        {/* Neutral indicator */}
-        <circle
-          cx="50"
-          cy="50"
-          r="12"
-          fill={currentGear === 'N' ? (animated ? '#fbbf24' : '#9ca3af') : 'transparent'}
-          stroke={currentGear === 'N' ? '#fff' : '#888'}
-          strokeWidth={currentGear === 'N' ? 2 : 1}
-          className="transition-all duration-200"
-        />
-        <text
-          x="50"
-          y="54"
-          textAnchor="middle"
-          fill={currentGear === 'N' ? '#fff' : '#555'}
-          fontSize="11"
-          fontWeight="bold"
-          fontFamily="monospace"
-        >
-          N
-        </text>
-        
-        {/* Gear stick knob */}
-        <circle
-          cx={50 + pos.x * 0.5}
-          cy={50 + pos.y * 0.5}
-          r="8"
-          fill={animated ? '#22c55e' : '#1f2937'}
-          stroke="#fff"
-          strokeWidth="2"
-          className={`transition-all duration-300 ${animated ? 'animate-pulse' : ''}`}
-        />
-      </svg>
-    </div>
-  )
-}
+      {/* Horizontal bar */}
+      <div 
+        className="absolute bg-gray-600"
+        style={{
+          left: `${15 * scale}px`,
+          right: `${15 * scale}px`,
+          top: '50%',
+          height: `${3 * scale}px`,
+          transform: 'translateY(-50%)',
+          borderRadius: '2px'
+        }}
+      />
+      
+      {/* Vertical lines and gear positions */}
+      {[25, 50, 75].map
